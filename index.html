@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Assessment Worksheet Generator</title>
+    <!-- Lightweight Classless CSS Framework for beautiful, automatic light/dark mode -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
+    <style>
+        :root {
+            --brand-color: #0076ff;
+        }
+        body {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .header-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .config-card {
+            background: var(--nc-bg-2);
+            border: 1px solid var(--nc-lk-hd);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .flex-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        .help-icon {
+            cursor: pointer;
+            font-size: 1.2rem;
+            text-decoration: none;
+            user-select: none;
+        }
+        .help-box {
+            background: var(--nc-bg-3);
+            border-left: 4px solid var(--brand-color);
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            border-radius: 0 4px 4px 0;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .action-zone {
+            margin-top: 1.5rem;
+        }
+        #output-container {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px dashed var(--nc-lk-hd);
+        }
+        /* Cheat-Proof & Security Styling */
+        .answer-sheet-wrapper {
+            margin-top: 3rem;
+            padding: 1.5rem;
+            border: 2px dashed #ff4136;
+            background-color: rgba(255, 65, 54, 0.05);
+            border-radius: 8px;
+        }
+        .security-controls {
+            background: var(--nc-bg-2);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 3rem;
+        }
+        /* Print Stylesheet Optimization */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                margin: 0;
+                padding: 0;
+            }
+            .config-card, .security-controls, h1, p, button, label, select, textarea, input, .help-box, hr {
+                display: none !important;
+            }
+            #output-container {
+                border-top: none !important;
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
+            .question-sheet {
+                display: block !important;
+                width: 100%;
+            }
+            /* If the master key is unlocked during printing, force it onto a clean secondary page */
+            .answer-sheet-wrapper {
+                page-break-before: always;
+                border: none !important;
+                background: none !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>Dynamic Worksheet Architect</h1>
+        <p>Upload a sample text snapshot or paste text to safely scale up variant assessment sheets.</p>
+    </div>
+
+    <!-- Configuration & Multi-Provider Router Layout -->
+    <div class="config-card">
+        <h3>1. API Router Configuration</h3>
+        <div class="flex-row">
+            <div class="flex-item">
+                <label for="provider-select">Model Provider</label>
+                <select id="provider-select">
+                    <option value="gemini">Google Gemini (Gemini 2.5 Flash)</option>
+                    <option value="openai">OpenAI (GPT-4.1-Mini)</option>
+                    <option value="openrouter">OpenRouter (Kimi K2.6 / GLM-5.2 / Free Tiers)</option>
+                </select>
+            </div>
+            <div class="flex-item">
+                <label for="api-key-input">
+                    API Secret Key <span id="help-toggle" class="help-icon" title="Toggle Help Context">❓</span>
+                </label>
+                <input type="password" id="api-key-input" placeholder="Paste your API key here...">
+            </div>
+        </div>
+        
+        <div id="help-context-box" class="help-box hidden"></div>
+
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+            <button id="btn-clear-keys" style="background-color: #aaa; color: #111;">Clear Keys</button>
+        </div>
+    </div>
+
+    <!-- Source Criteria Data Inputs -->
+    <div class="config-card">
+        <h3>2. Source Context & Syllabus Material</h3>
+        
+        <label for="input-text">Reference Worksheet Text (Paste curriculum benchmarks, equations, or sample items)</label>
+        <textarea id="input-text" rows="5" placeholder="Example: Solve for x:\n1) 2x + 5 = 15\n2) 3x - 4 = 11"></textarea>
+
+        <div style="margin: 1rem 0;">
+            <label for="input-image"><strong>OR:</strong> Scan / Upload Sample Sheet Image</label>
+            <input type="file" id="input-image" accept="image/*">
+            <small>Note: Image processing requires API keys/models equipped with vision capabilities (e.g., Gemini 2.5 Flash or GPT-4.1-Mini).</small>
+        </div>
+
+        <div class="action-zone">
+            <button id="btn-generate" style="width: 100%;">Synthesize Assessment Worksheet</button>
+        </div>
+    </div>
+
+    <!-- Master UI Output Output Area -->
+    <div id="output-container" class="hidden">
+        <!-- Render Target for AI Injectable Raw Elements -->
+        <div id="dynamic-injection-target"></div>
+
+        <!-- Hidden Anti-Cheating Answer Key Core Structure Container -->
+        <div id="secure-answer-wrapper" class="answer-sheet-wrapper hidden">
+            <h3>🔒 Master Evaluation & Answer Key</h3>
+            <div id="answer-sheet-injection"></div>
+        </div>
+
+        <!-- Gateway Controls to reveal the answer layout -->
+        <div class="security-controls">
+            <h4>Parent / Instructor Verification Console</h4>
+            <p style="font-size: 0.85rem; color: #666;">Access evaluation scripts, diagnostic analytics, or raw validation layers.</p>
+            <div class="flex-row">
+                <div class="flex-item">
+                    <select id="security-dropdown">
+                        <option value="" selected>-- Select Administrative Layer --</option>
+                        <option value="unlock">System Output / Review Log</option>
+                    </select>
+                </div>
+                <div class="flex-item">
+                    <button id="btn-security-go" class="hidden" disabled>Go</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Architecture System Constants & State Ensembles ---
+        const CONFIG = {
+            storageKeyPrefix: "worksheet_arch_",
+            providers: {
+                gemini: {
+                    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    helpText: "Obtain a free or low-tier key directly from Google AI Studio. Ensure billing or free quotas are set up.",
+                    link: "https://aistudio.google.com/"
+                },
+                openai: {
+                    endpoint: "https://api.openai.com/v1/chat/completions",
+                    helpText: "Obtain your project keys from the OpenAI Developer Platform. Requires active balance allocations.",
+                    link: "https://platform.openai.com/"
+                },
+                openrouter: {
+                    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+                    helpText: "Configure access to global open-source engines and top localized endpoints like Kimi K2.6 or GLM-5.2.",
+                    link: "https://openrouter.ai/"
+                }
+            },
+            // The architectural Multiplier Rule defined inside systemic prompts
+            systemInstruction: `You are an elite academic curriculum designer specializing in K-12 assessments.
+Your task is to analyze an uploaded sample worksheet or text snippet, then output an expanded, dynamic assessment layout.
+
+Strict Execution Metrics:
+1. Identify the concept, structural layout, and baseline difficulty of the input.
+2. Count the exact number of baseline items (N) inside the provided prompt source context.
+3. You MUST generate a completely fresh expanded worksheet containing exactly N + 2 or N + 3 distinct questions. Never output fewer than N + 2 questions.
+4. Scale up the difficulty profile across the worksheet framework gracefully: approximately 20% of the overall sheet should introduce advanced variants or higher-complexity conceptual problem spaces to encourage growth. The rest should vary baseline formats to ensure stability.
+5. NEVER include target age group metrics, grade nomenclature, or indicator texts (e.g., "Class 5 Worksheet"). Make it grade-agnostic.
+6. Return your output using valid, clean SEMANTIC HTML blocks ONLY. Do NOT wrap your markup response in markdown code blocks (\`\`\`html ... \`\`\`).
+7. You must carefully segment the generation into exactly two structures wrapped inside clear semantic container markup structures:
+   - A block with class "question-sheet" (containing only headers and pure evaluation entries for the student).
+   - A separate block with class "answer-sheet" (containing the concrete solutions alongside structured breakdown annotations).
+
+Structural Example Template:
+<div class="question-sheet">
+   <h2>Assessment Exercise</h2>
+   <!-- Questions go here -->
+</div>
+<div class="answer-sheet">
+   <h2>Answer Key & Solutions Matrix</h2>
+   <!-- Answers go here -->
+</div>`
+        };
+
+        // --- DOM Elements Reference Mapping ---
+        const el = {
+            providerSelect: document.getElementById('provider-select'),
+            apiKeyInput: document.getElementById('api-key-input'),
+            helpToggle: document.getElementById('help-toggle'),
+            helpBox: document.getElementById('help-context-box'),
+            btnClearKeys: document.getElementById('btn-clear-keys'),
+            inputText: document.getElementById('input-text'),
+            inputImage: document.getElementById('input-image'),
+            btnGenerate: document.getElementById('btn-generate'),
+            outputContainer: document.getElementById('output-container'),
+            injectionTarget: document.getElementById('dynamic-injection-target'),
+            secureAnswerWrapper: document.getElementById('secure-answer-wrapper'),
+            answerInjection: document.getElementById('answer-sheet-injection'),
+            securityDropdown: document.getElementById('security-dropdown'),
+            btnSecurityGo: document.getElementById('btn-security-go')
+        };
+
+        // --- Core Application Logic State Machine ---
+        let base64ImageCache = null;
+
+        // Initialize Router Handlers & Storage Hookups
+        window.addEventListener('DOMContentLoaded', () => {
+            hydrateSavedKeys();
+            updateHelpContext();
+            
+            // Wire Event listeners
+            el.providerSelect.addEventListener('change', () => {
+                hydrateSavedKeys();
+                updateHelpContext();
+            });
+            el.apiKeyInput.addEventListener('input', preserveCurrentKey);
+            el.helpToggle.addEventListener('click', toggleHelpView);
+            el.btnClearKeys.addEventListener('click', clearAllStoredKeys);
+            el.inputImage.addEventListener('change', processImageInputBuffer);
+            el.btnGenerate.addEventListener('click', executionPipelineTrigger);
+            el.securityDropdown.addEventListener('change', evaluateSecurityGatewayState);
+            el.btnSecurityGo.addEventListener('click', fireSecurityVerificationProtocol);
+        });
+
+        // --- Storage & Contextual Help Engine Methods ---
+        function hydrateSavedKeys() {
+            const activeProvider = el.providerSelect.value;
+            const savedKey = localStorage.getItem(CONFIG.storageKeyPrefix + activeProvider);
+            el.apiKeyInput.value = savedKey ? savedKey : "";
+        }
+
+        function preserveCurrentKey() {
+            const activeProvider = el.providerSelect.value;
+            localStorage.setItem(CONFIG.storageKeyPrefix + activeProvider, el.apiKeyInput.value.trim());
+        }
+
+        function clearAllStoredKeys() {
+            if (confirm("Are you sure you want to wipe all stored API keys from this browser?")) {
+                Object.keys(CONFIG.providers).forEach(provider => {
+                    localStorage.removeItem(CONFIG.storageKeyPrefix + provider);
+                });
+                el.apiKeyInput.value = "";
+                alert("Keys successfully cleared.");
+            }
+        }
+
+        function updateHelpContext() {
+            const activeProvider = el.providerSelect.value;
+            const data = CONFIG.providers[activeProvider];
+            el.helpBox.innerHTML = `${data.helpText} <br><a href="${data.link}" target="_blank" rel="noopener">Access Authorization Portal &rarr;</a>`;
+        }
+
+        function toggleHelpView() {
+            el.helpBox.classList.toggle('hidden');
+        }
+
+        // --- Asynchronous File Handling Processing System ---
+        function processImageInputBuffer(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                base64ImageCache = null;
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                base64ImageCache = event.target.result; // Data URI scheme containing binary footprint
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- Security Protocol Gateways ---
+        function evaluateSecurityGatewayState() {
+            if (el.securityDropdown.value === "unlock") {
+                el.btnSecurityGo.classList.remove('hidden');
+                el.btnSecurityGo.removeAttribute('disabled');
+            } else {
+                el.btnSecurityGo.classList.add('hidden');
+                el.btnSecurityGo.setAttribute('disabled', 'true');
+            }
+        }
+
+        function fireSecurityVerificationProtocol() {
+            // A simple confirmation window acts as an excellent confirmation step for parents/instructors
+            const verified = confirm("ADMINISTRATION VERIFICATION:\n\nAre you sure you want to expose the grading sheet and answers?");
+            if (verified) {
+                el.secureAnswerWrapper.classList.remove('hidden');
+                el.secureAnswerWrapper.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // --- Core Generation Orchestrator & Request Router Pipeline ---
+        async function executionPipelineTrigger() {
+            const key = el.apiKeyInput.value.trim();
+            if (!key) {
+                alert("Missing Security API Credentials. Please provide a key for the selected engine.");
+                return;
+            }
+
+            const textContext = el.inputText.value.trim();
+            if (!textContext && !base64ImageCache) {
+                alert("Context Deficiency. Please supply a reference worksheet text or upload an item block to synthesize.");
+                return;
+            }
+
+            // Lock UI and provide feedback
+            el.btnGenerate.setAttribute('disabled', 'true');
+            el.btnGenerate.textContent = "Processing Orchestration... Please Wait.";
+            el.outputContainer.classList.add('hidden');
+            el.secureAnswerWrapper.classList.add('hidden');
+            el.securityDropdown.value = "";
+            evaluateSecurityGatewayState();
+
+            const provider = el.providerSelect.value;
+            const userContentPayload = `User-Provided Source Material Context:\n${textContext}`;
+
+            try {
+                let textResult = "";
+                if (provider === 'gemini') {
+                    textResult = await dispatchGeminiCall(key, userContentPayload, base64ImageCache);
+                } else if (provider === 'openai') {
+                    textResult = await dispatchOpenAiCall(key, userContentPayload, base64ImageCache);
+                } else if (provider === 'openrouter') {
+                    textResult = await dispatchOpenRouterCall(key, userContentPayload, base64ImageCache);
+                }
+
+                renderExtractedPayload(textResult);
+            } catch (err) {
+                console.error("Pipeline Failure: ", err);
+                alert(`Architectural Error during generation: ${err.message}`);
+            } finally {
+                el.btnGenerate.removeAttribute('disabled');
+                el.btnGenerate.textContent = "Synthesize Assessment Worksheet";
+            }
+        }
+
+        // --- Provider-Specific Transport Layer Declarations ---
+
+        async function dispatchGeminiCall(key, textPayload, base64DataUri) {
+            const targetUrl = `${CONFIG.providers.gemini.endpoint}?key=${key}`;
+            const contents = [];
+
+            // Construct structural input array elements matching Gemini API parameters
+            const parts = [{ text: CONFIG.systemInstruction + "\n\n" + textPayload }];
+            
+            if (base64DataUri) {
+                const mimeType = base64DataUri.split(';')[0].split(':')[1];
+                const cleanBase64 = base64DataUri.split(',')[1];
+                parts.push({
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: cleanBase64
+                    }
+                });
+            }
+
+            contents.push({ parts: parts });
+
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: contents })
+            });
+
+            if (!response.ok) {
+                const errorLog = await response.text();
+                throw new Error(`[Gemini HTTP ${response.status}] Details: ${errorLog}`);
+            }
+
+            const json = await response.json();
+            return json.candidates[0].content.parts[0].text;
+        }
+
+        async function dispatchOpenAiCall(key, textPayload, base64DataUri) {
+            const targetUrl = CONFIG.providers.openai.endpoint;
+            const messages = [
+                { role: "system", content: CONFIG.systemInstruction },
+                { role: "user", content: [] }
+            ];
+
+            messages[1].content.push({ type: "text", text: textPayload });
+
+            if (base64DataUri) {
+                messages[1].content.push({
+                    type: "image_url",
+                    image_url: { url: base64DataUri }
+                });
+            }
+
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4.5-mini", // Fallback targeting standard 2026 mini structural tier
+                    messages: messages
+                })
+            });
+
+            if (!response.ok) {
+                const errorLog = await response.text();
+                throw new Error(`[OpenAI HTTP ${response.status}] Details: ${errorLog}`);
+            }
+
+            const json = await response.json();
+            return json.choices[0].message.content;
+        }
+
+        async function dispatchOpenRouterCall(key, textPayload, base64DataUri) {
+            const targetUrl = CONFIG.providers.openrouter.endpoint;
+            const messages = [
+                { role: "system", content: CONFIG.systemInstruction },
+                { role: "user", content: [] }
+            ];
+
+            messages[1].content.push({ type: "text", text: textPayload });
+
+            if (base64DataUri) {
+                messages[1].content.push({
+                    type: "image_url",
+                    image_url: { url: base64DataUri }
+                });
+            }
+
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`,
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': "Dynamic Assessment Engine"
+                },
+                body: JSON.stringify({
+                    model: "openrouter/auto", // Intelligently targets current global free/low-cost system tiers
+                    messages: messages
+                })
+            });
+
+            if (!response.ok) {
+                const errorLog = await response.text();
+                throw new Error(`[OpenRouter HTTP ${response.status}] Details: ${errorLog}`);
+            }
+
+            const json = await response.json();
+            return json.choices[0].message.content;
+        }
+
+        // --- Document Mutation & Clean-up Handlers ---
+        function renderExtractedPayload(rawHtmlOutput) {
+            // Sanitization fallback to clean code block wrappers if models disobey formatting prompts
+            let cleanHtml = rawHtmlOutput.trim();
+            if (cleanHtml.startsWith("```html")) {
+                cleanHtml = cleanHtml.replace(/^```html/, "").replace(/```$/, "");
+            } else if (cleanHtml.startsWith("```")) {
+                cleanHtml = cleanHtml.replace(/^```/, "").replace(/```$/, "");
+            }
+
+            // Create off-screen DOM sandbox to process safely and pull segment fragments
+            const processorSandbox = document.createElement('div');
+            processorSandbox.innerHTML = cleanHtml;
+
+            const detectedQuestions = processorSandbox.querySelector('.question-sheet');
+            const detectedAnswers = processorSandbox.querySelector('.answer-sheet');
+
+            if (!detectedQuestions) {
+                // Critical parsing fallback: treat generic non-classed response elegantly
+                el.injectionTarget.innerHTML = cleanHtml;
+                el.answerInjection.innerHTML = "<p>No structured answer layer detected. Review full systemic log above.</p>";
+            } else {
+                // Populate separated blocks into independent targets
+                el.injectionTarget.innerHTML = "";
+                el.injectionTarget.appendChild(detectedQuestions);
+                
+                el.answerInjection.innerHTML = "";
+                if (detectedAnswers) {
+                    el.answerInjection.appendChild(detectedAnswers);
+                } else {
+                    el.answerInjection.innerHTML = "<p>Answer sheet failed segment formatting parameters.</p>";
+                }
+            }
+
+            // Render updated viewable space
+            el.outputContainer.classList.remove('hidden');
+            el.outputContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
