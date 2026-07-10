@@ -109,7 +109,7 @@
 
     <div class="header-container">
         <h1>Dynamic Worksheet Architect</h1>
-        <p>Upload a sample text snapshot or paste text to safely scale up variant assessment sheets.</p>
+        <p>Upload a sample text snapshot or paste text to generate a fresh practice worksheet with varied questions and slightly higher difficulty.</p>
     </div>
 
     <!-- Configuration & Multi-Provider Router Layout -->
@@ -156,10 +156,13 @@
             <input type="file" id="input-file" accept="image/*,.pdf" class="hidden">
             <small id="source-file-label" style="display: block; margin-top: 0.5rem;">No source file selected yet.</small>
             <small>Use Camera for direct capture from a textbook or worksheet. Use Upload PDF / Image to choose a file from your device.</small>
+            <div style="margin-top: 0.75rem; padding: 0.75rem; border-left: 4px solid var(--brand-color); background: var(--nc-bg-3); border-radius: 4px; font-size: 0.9rem;">
+                <strong>Practice mode:</strong> generate fresh variant questions from the source material. For math, science, history, biology, geography, English, and other subjects, create similar-but-new questions with the same concept. Mix easy, medium, and difficult questions so the paper feels realistic and balanced.
+            </div>
         </div>
 
         <div class="action-zone">
-            <button id="btn-generate" style="width: 100%;">Synthesize Assessment Worksheet</button>
+            <button id="btn-generate" style="width: 100%;">Generate Variant Practice Sheet</button>
         </div>
     </div>
 
@@ -215,16 +218,17 @@
             },
             // The architectural Multiplier Rule defined inside systemic prompts
             systemInstruction: `You are an elite academic curriculum designer specializing in K-12 assessments.
-Your task is to analyze an uploaded sample worksheet or text snippet, then output an expanded, dynamic assessment layout.
+Your task is to analyze an uploaded sample worksheet, textbook page, or text snippet, then output a fresh practice worksheet with conceptually similar but varied questions.
 
 Strict Execution Metrics:
-1. Identify the concept, structural layout, and baseline difficulty of the input.
-2. Count the exact number of baseline items (N) inside the provided prompt source context.
-3. You MUST generate a completely fresh expanded worksheet containing exactly N + 2 or N + 3 distinct questions. Never output fewer than N + 2 questions.
-4. Scale up the difficulty profile across the worksheet framework gracefully: approximately 20% of the overall sheet should introduce advanced variants or higher-complexity conceptual problem spaces to encourage growth. The rest should vary baseline formats to ensure stability.
-5. NEVER include target age group metrics, grade nomenclature, or indicator texts (e.g., "Class 5 Worksheet"). Make it grade-agnostic.
-6. Return your output using valid, clean SEMANTIC HTML blocks ONLY. Do NOT wrap your markup response in markdown code blocks (\`\`\`html ... \`\`\`).
-7. You must carefully segment the generation into exactly two structures wrapped inside clear semantic container markup structures:
+1. Identify the concept, structure, and baseline difficulty of the input.
+2. Treat the supplied source as a seed bank of questions, not as a template to copy.
+3. Generate a completely fresh practice sheet that contains new questions which test the same skills, topics, and difficulty level as the source. Do NOT simply repeat the original questions or append a few near-duplicates at the end.
+4. For each source item, create one or more fresh variants that preserve the core concept while changing numbers, wording, structure, or context. If the source has N questions, aim to produce at least N + 2 new questions, with the strongest variation pattern being one new variant per source question.
+5. Keep the difficulty slightly higher or more varied than the source for practice value, while staying aligned to the same topic. Around 20% of the sheet may introduce a more advanced twist.
+6. NEVER include target age group metrics, grade nomenclature, or indicator texts (e.g., "Class 5 Worksheet"). Make it grade-agnostic.
+7. Return your output using valid, clean SEMANTIC HTML blocks ONLY. Do NOT wrap your markup response in markdown code blocks (\`\`\`html ... \`\`\`).
+8. You must carefully segment the generation into exactly two structures wrapped inside clear semantic container markup structures:
    - A block with class "question-sheet" (containing only headers and pure evaluation entries for the student).
    - A separate block with class "answer-sheet" (containing the concrete solutions alongside structured breakdown annotations).
 
@@ -395,7 +399,7 @@ Structural Example Template:
             const mediaContext = sourceMediaInput
                 ? `\n\nAttached source file: ${sourceMediaInput.filename} (${sourceMediaInput.kind})`
                 : "";
-            const userContentPayload = `User-Provided Source Material Context:\n${textContext}${mediaContext}`;
+            const userContentPayload = `User-Provided Source Material Context:\n${textContext}${mediaContext}\n\nCreate a fresh practice worksheet from this source. Generate varied questions that test the same concepts as the source material, but do not copy the original questions verbatim. This applies to all subjects including math, science, history, biology, geography, English, and other topics. Make the questions similar in skill but varied in difficulty. The final paper should feel realistic, with a mix of easy, medium, and difficult questions distributed naturally across the sheet. For each source question, produce new practice variants that preserve the same concept while changing numbers, wording, structure, or context.`;
 
             try {
                 let textResult = "";
