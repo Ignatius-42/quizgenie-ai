@@ -147,9 +147,15 @@
         <textarea id="input-text" rows="5" placeholder="Example: Solve for x:\n1) 2x + 5 = 15\n2) 3x - 4 = 11"></textarea>
 
         <div style="margin: 1rem 0;">
-            <label for="input-image"><strong>OR:</strong> Scan / Upload Sample Sheet Image</label>
-            <input type="file" id="input-image" accept="image/*">
-            <small>Note: Image processing requires API keys/models equipped with vision capabilities (e.g., Gemini 2.5 Flash or GPT-4.1-Mini).</small>
+            <label><strong>OR:</strong> Capture from Camera or Upload a Sample Sheet</label>
+            <div class="flex-row" style="margin-top: 0.5rem;">
+                <button type="button" id="btn-camera-input">📷 Use Camera</button>
+                <button type="button" id="btn-file-input">📄 Upload PDF / Image</button>
+            </div>
+            <input type="file" id="input-camera" accept="image/*" capture="environment" class="hidden">
+            <input type="file" id="input-file" accept="image/*,.pdf" class="hidden">
+            <small id="source-file-label" style="display: block; margin-top: 0.5rem;">No source file selected yet.</small>
+            <small>Use Camera for direct capture from a textbook or worksheet. Use Upload PDF / Image to choose a file from your device.</small>
         </div>
 
         <div class="action-zone">
@@ -241,7 +247,11 @@ Structural Example Template:
             helpBox: document.getElementById('help-context-box'),
             btnClearKeys: document.getElementById('btn-clear-keys'),
             inputText: document.getElementById('input-text'),
-            inputImage: document.getElementById('input-image'),
+            btnCameraInput: document.getElementById('btn-camera-input'),
+            btnFileInput: document.getElementById('btn-file-input'),
+            inputCamera: document.getElementById('input-camera'),
+            inputFile: document.getElementById('input-file'),
+            sourceFileLabel: document.getElementById('source-file-label'),
             btnGenerate: document.getElementById('btn-generate'),
             outputContainer: document.getElementById('output-container'),
             injectionTarget: document.getElementById('dynamic-injection-target'),
@@ -252,7 +262,7 @@ Structural Example Template:
         };
 
         // --- Core Application Logic State Machine ---
-        let base64ImageCache = null;
+        let sourceMediaInput = null;
 
         // Initialize Router Handlers & Storage Hookups
         window.addEventListener('DOMContentLoaded', () => {
@@ -267,7 +277,10 @@ Structural Example Template:
             el.apiKeyInput.addEventListener('input', preserveCurrentKey);
             el.helpToggle.addEventListener('click', toggleHelpView);
             el.btnClearKeys.addEventListener('click', clearAllStoredKeys);
-            el.inputImage.addEventListener('change', processImageInputBuffer);
+            el.btnCameraInput.addEventListener('click', () => el.inputCamera.click());
+            el.btnFileInput.addEventListener('click', () => el.inputFile.click());
+            el.inputCamera.addEventListener('change', handleSourceFileSelection);
+            el.inputFile.addEventListener('change', handleSourceFileSelection);
             el.btnGenerate.addEventListener('click', executionPipelineTrigger);
             el.securityDropdown.addEventListener('change', evaluateSecurityGatewayState);
             el.btnSecurityGo.addEventListener('click', fireSecurityVerificationProtocol);
@@ -306,17 +319,34 @@ Structural Example Template:
         }
 
         // --- Asynchronous File Handling Processing System ---
-        function processImageInputBuffer(e) {
+        function handleSourceFileSelection(e) {
             const file = e.target.files[0];
             if (!file) {
-                base64ImageCache = null;
+                sourceMediaInput = null;
+                updateSourceFileLabel();
                 return;
             }
             const reader = new FileReader();
             reader.onload = function(event) {
-                base64ImageCache = event.target.result; // Data URI scheme containing binary footprint
+                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                sourceMediaInput = {
+                    kind: isPdf ? 'pdf' : 'image',
+                    mimeType: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+                    dataUrl: event.target.result,
+                    filename: file.name
+                };
+                updateSourceFileLabel();
             };
             reader.readAsDataURL(file);
+        }
+
+        function updateSourceFileLabel() {
+            if (!sourceMediaInput) {
+                el.sourceFileLabel.textContent = 'No source file selected yet.';
+                return;
+            }
+            const label = sourceMediaInput.kind === 'pdf' ? 'PDF' : 'Image';
+            el.sourceFileLabel.textContent = `${label} ready: ${sourceMediaInput.filename}`;
         }
 
         // --- Security Protocol Gateways ---
@@ -348,7 +378,7 @@ Structural Example Template:
             }
 
             const textContext = el.inputText.value.trim();
-            if (!textContext && !base64ImageCache) {
+            if (!textContext && !sourceMediaInput) {
                 alert("Context Deficiency. Please supply a reference worksheet text or upload an item block to synthesize.");
                 return;
             }
@@ -362,16 +392,19 @@ Structural Example Template:
             evaluateSecurityGatewayState();
 
             const provider = el.providerSelect.value;
-            const userContentPayload = `User-Provided Source Material Context:\n${textContext}`;
+            const mediaContext = sourceMediaInput
+                ? `\n\nAttached source file: ${sourceMediaInput.filename} (${sourceMediaInput.kind})`
+                : "";
+            const userContentPayload = `User-Provided Source Material Context:\n${textContext}${mediaContext}`;
 
             try {
                 let textResult = "";
                 if (provider === 'gemini') {
-                    textResult = await dispatchGeminiCall(key, userContentPayload, base64ImageCache);
+                    textResult = await dispatchGeminiCall(key, userContentPayload, sourceMediaInput);
                 } else if (provider === 'openai') {
-                    textResult = await dispatchOpenAiCall(key, userContentPayload, base64ImageCache);
+                    textResult = await dispatchOpenAiCall(key, userContentPayload, sourceMediaInput);
                 } else if (provider === 'openrouter') {
-                    textResult = await dispatchOpenRouterCall(key, userContentPayload, base64ImageCache);
+                    textResult = await dispatchOpenRouterCall(key, userContentPayload, sourceMediaInput);
                 }
 
                 renderExtractedPayload(textResult);
@@ -386,21 +419,25 @@ Structural Example Template:
 
         // --- Provider-Specific Transport Layer Declarations ---
 
-        async function dispatchGeminiCall(key, textPayload, base64DataUri) {
+        async function dispatchGeminiCall(key, textPayload, mediaInput) {
             const targetUrl = `${CONFIG.providers.gemini.endpoint}?key=${key}`;
             const contents = [];
 
             // Construct structural input array elements matching Gemini API parameters
             const parts = [{ text: CONFIG.systemInstruction + "\n\n" + textPayload }];
             
-            if (base64DataUri) {
-                const mimeType = base64DataUri.split(';')[0].split(':')[1];
-                const cleanBase64 = base64DataUri.split(',')[1];
+            if (mediaInput?.kind === 'image' && mediaInput.dataUrl) {
+                const mimeType = mediaInput.mimeType;
+                const cleanBase64 = mediaInput.dataUrl.split(',')[1];
                 parts.push({
                     inlineData: {
                         mimeType: mimeType,
                         data: cleanBase64
                     }
+                });
+            } else if (mediaInput?.kind === 'pdf' && mediaInput.dataUrl) {
+                parts.push({
+                    text: `The user attached a PDF named ${mediaInput.filename}. If your selected model supports document understanding, please analyze it carefully.`
                 });
             }
 
@@ -421,7 +458,7 @@ Structural Example Template:
             return json.candidates[0].content.parts[0].text;
         }
 
-        async function dispatchOpenAiCall(key, textPayload, base64DataUri) {
+        async function dispatchOpenAiCall(key, textPayload, mediaInput) {
             const targetUrl = CONFIG.providers.openai.endpoint;
             const messages = [
                 { role: "system", content: CONFIG.systemInstruction },
@@ -430,10 +467,15 @@ Structural Example Template:
 
             messages[1].content.push({ type: "text", text: textPayload });
 
-            if (base64DataUri) {
+            if (mediaInput?.kind === 'image' && mediaInput.dataUrl) {
                 messages[1].content.push({
                     type: "image_url",
-                    image_url: { url: base64DataUri }
+                    image_url: { url: mediaInput.dataUrl }
+                });
+            } else if (mediaInput?.kind === 'pdf') {
+                messages[1].content.push({
+                    type: "text",
+                    text: `The user attached a PDF named ${mediaInput.filename}. For best results, please use the camera or image upload flow instead of a PDF.`
                 });
             }
 
@@ -458,7 +500,7 @@ Structural Example Template:
             return json.choices[0].message.content;
         }
 
-        async function dispatchOpenRouterCall(key, textPayload, base64DataUri) {
+        async function dispatchOpenRouterCall(key, textPayload, mediaInput) {
             const targetUrl = CONFIG.providers.openrouter.endpoint;
             const messages = [
                 { role: "system", content: CONFIG.systemInstruction },
@@ -467,10 +509,15 @@ Structural Example Template:
 
             messages[1].content.push({ type: "text", text: textPayload });
 
-            if (base64DataUri) {
+            if (mediaInput?.kind === 'image' && mediaInput.dataUrl) {
                 messages[1].content.push({
                     type: "image_url",
-                    image_url: { url: base64DataUri }
+                    image_url: { url: mediaInput.dataUrl }
+                });
+            } else if (mediaInput?.kind === 'pdf') {
+                messages[1].content.push({
+                    type: "text",
+                    text: `The user attached a PDF named ${mediaInput.filename}. For best results, please use the camera or image upload flow instead of a PDF.`
                 });
             }
 

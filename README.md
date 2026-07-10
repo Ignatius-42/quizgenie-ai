@@ -32,6 +32,7 @@ Because this application is completely self-contained within a single semantic `
 *   API keys are handled completely client-side. They are parsed directly from the UI inputs and committed securely to the browser's local sandbox space (`localStorage`).
 *   Keys never hit an intermediate server, preventing tracking or exposure leaks.
 *   Clicking **Clear Keys** instantly wipes all associated provider keys from the browser cache environment.
+*   On supported mobile browsers, you can capture a worksheet or textbook page directly from your camera by using the image input, so you can go from photo to generated worksheet without an extra upload step.
 
 ---
 
