@@ -75,6 +75,63 @@
             border-radius: 6px;
             margin-top: 3rem;
         }
+        /* Modern button styling for input buttons */
+        .input-button-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .input-button {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--brand-color);
+            background: transparent;
+            color: var(--brand-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .input-button:hover {
+            background: var(--brand-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 118, 255, 0.2);
+        }
+        .input-button svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+        }
+        /* Profile management styling */
+        .profile-section {
+            background: var(--nc-bg-3);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .profile-controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .profile-badge {
+            display: inline-block;
+            background: var(--brand-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
         /* Print Stylesheet Optimization */
         @media print {
             body {
@@ -83,7 +140,7 @@
                 margin: 0;
                 padding: 0;
             }
-            .config-card, .security-controls, h1, p, button, label, select, textarea, input, .help-box, hr {
+            .config-card, .security-controls, h1, p, button, label, select, textarea, input, .help-box, hr, .profile-section {
                 display: none !important;
             }
             #output-container {
@@ -110,6 +167,26 @@
     <div class="header-container">
         <h1>Dynamic Worksheet Architect</h1>
         <p>Upload a sample text snapshot or paste text to generate a fresh practice worksheet with varied questions and slightly higher difficulty.</p>
+    </div>
+
+    <!-- User Profile Management -->
+    <div class="config-card">
+        <h3>👤 User Profile</h3>
+        <div class="profile-section">
+            <div class="profile-controls">
+                <label for="profile-select" style="min-width: auto;">Select Profile:</label>
+                <select id="profile-select" style="flex: 1; min-width: 150px;">
+                    <option value="">-- Create or Select a Profile --</option>
+                </select>
+                <button id="btn-new-profile" style="padding: 0.5rem 1rem; font-size: 0.9rem;">+ New</button>
+                <button id="btn-delete-profile" style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #ff4136; color: white;">Delete</button>
+            </div>
+            <div style="margin-top: 0.75rem;">
+                <label for="profile-email">Email / Profile Name</label>
+                <input type="email" id="profile-email" placeholder="your.name@example.com" style="width: 100%;">
+            </div>
+            <small id="profile-status" style="display: block; margin-top: 0.5rem; color: #666;">No profile selected</small>
+        </div>
     </div>
 
     <!-- Configuration & Multi-Provider Router Layout -->
@@ -148,14 +225,19 @@
 
         <div style="margin: 1rem 0;">
             <label><strong>OR:</strong> Capture from Camera or Upload a Sample Sheet</label>
-            <div class="flex-row" style="margin-top: 0.5rem;">
-                <button type="button" id="btn-camera-input">📷 Use Camera</button>
-                <button type="button" id="btn-file-input">📄 Upload PDF / Image</button>
+            <div class="input-button-row">
+                <button type="button" id="btn-camera-input" class="input-button">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Capture with Camera
+                </button>
+                <button type="button" id="btn-file-input" class="input-button">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path><path d="M9 12h6M9 16h6"></path></svg>
+                    Upload PDF / Image
+                </button>
             </div>
             <input type="file" id="input-camera" accept="image/*" capture="environment" class="hidden">
             <input type="file" id="input-file" accept="image/*,.pdf" class="hidden">
             <small id="source-file-label" style="display: block; margin-top: 0.5rem;">No source file selected yet.</small>
-            <small>Use Camera for direct capture from a textbook or worksheet. Use Upload PDF / Image to choose a file from your device.</small>
             <div style="margin-top: 0.75rem; padding: 0.75rem; border-left: 4px solid var(--brand-color); background: var(--nc-bg-3); border-radius: 4px; font-size: 0.9rem;">
                 <strong>Practice mode:</strong> generate fresh variant questions from the source material. For math, science, history, biology, geography, English, and other subjects, create similar-but-new questions with the same concept. Mix easy, medium, and difficult questions so the paper feels realistic and balanced.
             </div>
@@ -245,6 +327,11 @@ Structural Example Template:
 
         // --- DOM Elements Reference Mapping ---
         const el = {
+            profileSelect: document.getElementById('profile-select'),
+            profileEmail: document.getElementById('profile-email'),
+            profileStatus: document.getElementById('profile-status'),
+            btnNewProfile: document.getElementById('btn-new-profile'),
+            btnDeleteProfile: document.getElementById('btn-delete-profile'),
             providerSelect: document.getElementById('provider-select'),
             apiKeyInput: document.getElementById('api-key-input'),
             helpToggle: document.getElementById('help-toggle'),
@@ -267,6 +354,133 @@ Structural Example Template:
 
         // --- Core Application Logic State Machine ---
         let sourceMediaInput = null;
+        let currentProfile = null;
+        const MAX_PROFILES = 5;
+        const PROFILES_STORAGE_KEY = "worksheet_arch_profiles";
+        const CURRENT_PROFILE_KEY = "worksheet_arch_current_profile";
+
+        // Initialize Router Handlers & Storage Hookups
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeProfiles();
+            hydrateSavedKeys();
+            updateHelpContext();
+            
+            // Wire Event listeners
+            el.profileSelect.addEventListener('change', switchProfile);
+            el.profileEmail.addEventListener('change', saveProfileEmail);
+            el.btnNewProfile.addEventListener('click', createNewProfile);
+            el.btnDeleteProfile.addEventListener('click', deleteCurrentProfile);
+            el.providerSelect.addEventListener('change', () => {
+                hydrateSavedKeys();
+                updateHelpContext();
+            });
+            el.apiKeyInput.addEventListener('input', preserveCurrentKey);
+            el.helpToggle.addEventListener('click', toggleHelpView);
+            el.btnClearKeys.addEventListener('click', clearAllStoredKeys);
+            el.btnCameraInput.addEventListener('click', () => el.inputCamera.click());
+            el.btnFileInput.addEventListener('click', () => el.inputFile.click());
+            el.inputCamera.addEventListener('change', handleSourceFileSelection);
+            el.inputFile.addEventListener('change', handleSourceFileSelection);
+            el.btnGenerate.addEventListener('click', executionPipelineTrigger);
+            el.securityDropdown.addEventListener('change', evaluateSecurityGatewayState);
+            el.btnSecurityGo.addEventListener('click', fireSecurityVerificationProtocol);
+        });
+
+        // --- Profile Management Functions ---
+        function getAllProfiles() {
+            const stored = localStorage.getItem(PROFILES_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveProfiles(profiles) {
+            localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+        }
+
+        function initializeProfiles() {
+            const profiles = getAllProfiles();
+            const lastProfile = localStorage.getItem(CURRENT_PROFILE_KEY);
+            updateProfileDropdown();
+            if (lastProfile && profiles[lastProfile]) {
+                el.profileSelect.value = lastProfile;
+                switchProfile();
+            }
+        }
+
+        function updateProfileDropdown() {
+            const profiles = getAllProfiles();
+            const currentValue = el.profileSelect.value;
+            el.profileSelect.innerHTML = '<option value="">-- Create or Select a Profile --</option>';
+            Object.keys(profiles).forEach(profileId => {
+                const option = document.createElement('option');
+                option.value = profileId;
+                option.textContent = profiles[profileId].email || profileId;
+                el.profileSelect.appendChild(option);
+            });
+            el.profileSelect.value = currentValue;
+        }
+
+        function createNewProfile() {
+            const profiles = getAllProfiles();
+            if (Object.keys(profiles).length >= MAX_PROFILES) {
+                alert(`Maximum ${MAX_PROFILES} profiles allowed. Please delete a profile first.`);
+                return;
+            }
+            const email = prompt('Enter email or profile name for the new profile:');
+            if (!email) return;
+            const profileId = `profile_${Date.now()}`;
+            profiles[profileId] = {
+                email: email,
+                providers: {}
+            };
+            saveProfiles(profiles);
+            updateProfileDropdown();
+            el.profileSelect.value = profileId;
+            switchProfile();
+            alert(`Profile "${email}" created successfully!`);
+        }
+
+        function switchProfile() {
+            const profileId = el.profileSelect.value;
+            if (!profileId) {
+                currentProfile = null;
+                el.profileEmail.value = '';
+                el.profileStatus.textContent = 'No profile selected';
+                el.apiKeyInput.value = '';
+                el.btnDeleteProfile.setAttribute('disabled', 'true');
+                return;
+            }
+            const profiles = getAllProfiles();
+            currentProfile = profileId;
+            const profile = profiles[profileId];
+            el.profileEmail.value = profile.email || '';
+            el.profileStatus.textContent = `Profile: ${profile.email}`;
+            el.btnDeleteProfile.removeAttribute('disabled');
+            localStorage.setItem(CURRENT_PROFILE_KEY, profileId);
+            hydrateSavedKeys();
+        }
+
+        function saveProfileEmail() {
+            if (!currentProfile) return;
+            const profiles = getAllProfiles();
+            profiles[currentProfile].email = el.profileEmail.value;
+            saveProfiles(profiles);
+            updateProfileDropdown();
+            el.profileSelect.value = currentProfile;
+        }
+
+        function deleteCurrentProfile() {
+            if (!currentProfile || !confirm('Are you sure you want to delete this profile and all its API keys?')) {
+                return;
+            }
+            const profiles = getAllProfiles();
+            delete profiles[currentProfile];
+            saveProfiles(profiles);
+            currentProfile = null;
+            el.profileSelect.value = '';
+            updateProfileDropdown();
+            switchProfile();
+            alert('Profile deleted.');
+        }
 
         // Initialize Router Handlers & Storage Hookups
         window.addEventListener('DOMContentLoaded', () => {
@@ -292,24 +506,41 @@ Structural Example Template:
 
         // --- Storage & Contextual Help Engine Methods ---
         function hydrateSavedKeys() {
+            if (!currentProfile) {
+                el.apiKeyInput.value = "";
+                return;
+            }
+            const profiles = getAllProfiles();
+            const profile = profiles[currentProfile];
             const activeProvider = el.providerSelect.value;
-            const savedKey = localStorage.getItem(CONFIG.storageKeyPrefix + activeProvider);
-            el.apiKeyInput.value = savedKey ? savedKey : "";
+            const savedKey = profile.providers && profile.providers[activeProvider] ? profile.providers[activeProvider] : "";
+            el.apiKeyInput.value = savedKey;
         }
 
         function preserveCurrentKey() {
+            if (!currentProfile) {
+                alert('Please select or create a profile first.');
+                el.apiKeyInput.value = "";
+                return;
+            }
+            const profiles = getAllProfiles();
             const activeProvider = el.providerSelect.value;
-            localStorage.setItem(CONFIG.storageKeyPrefix + activeProvider, el.apiKeyInput.value.trim());
+            if (!profiles[currentProfile].providers) {
+                profiles[currentProfile].providers = {};
+            }
+            profiles[currentProfile].providers[activeProvider] = el.apiKeyInput.value.trim();
+            saveProfiles(profiles);
         }
 
         function clearAllStoredKeys() {
-            if (confirm("Are you sure you want to wipe all stored API keys from this browser?")) {
-                Object.keys(CONFIG.providers).forEach(provider => {
-                    localStorage.removeItem(CONFIG.storageKeyPrefix + provider);
-                });
-                el.apiKeyInput.value = "";
-                alert("Keys successfully cleared.");
+            if (!currentProfile || !confirm("Are you sure you want to clear all API keys for this profile?")) {
+                return;
             }
+            const profiles = getAllProfiles();
+            profiles[currentProfile].providers = {};
+            saveProfiles(profiles);
+            el.apiKeyInput.value = "";
+            alert("API keys cleared for this profile.");
         }
 
         function updateHelpContext() {
