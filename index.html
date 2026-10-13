@@ -766,7 +766,8 @@ Structural Example Template:
                 },
                 body: JSON.stringify({
                     model: "openrouter/auto", // Intelligently targets current global free/low-cost system tiers
-                    messages: messages
+                    messages: messages,
+                    max_tokens: 8192
                 })
             });
 
@@ -776,7 +777,14 @@ Structural Example Template:
             }
 
             const json = await response.json();
-            return json.choices[0].message.content;
+            const choice = json.choices?.[0];
+            if (typeof choice?.message?.content !== 'string') {
+                throw new Error("OpenRouter returned no worksheet text. Please try again or select another model.");
+            }
+            if (choice.finish_reason === 'length') {
+                throw new Error("OpenRouter stopped because the selected model reached its output limit. Try a shorter source or try again with a model that supports longer responses.");
+            }
+            return choice.message.content;
         }
 
         // --- Document Mutation & Clean-up Handlers ---

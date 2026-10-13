@@ -33,6 +33,7 @@ Because this application is completely self-contained within a single semantic `
 *   Keys never hit an intermediate server, preventing tracking or exposure leaks.
 *   Clicking **Clear Keys** instantly wipes all associated provider keys from the browser cache environment.
 *   On supported mobile browsers, you can capture a worksheet or textbook page directly from your camera by using the image input, so you can go from photo to generated worksheet without an extra upload step.
+*   OpenRouter requests allow up to 8,192 output tokens. The selected model may enforce a lower limit; if it stops at that limit, the app reports that the worksheet response was cut off instead of silently treating it as complete.
 
 ---
 
